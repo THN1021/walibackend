@@ -24,6 +24,11 @@ class AppraisalLogSerializer(serializers.ModelSerializer):
         "pure_net_weight": "结算净重为: {pure_net_weight} 吨",
     }
 
+    MAP_FIELD_NAME_SUPPLE = {
+        "water_content": "含水量为: {water_content}%",
+        "impurity_content": "杂质为: {impurity_content} 吨",
+    }
+
     MAP_PARAMETER_NAME = {
         "price_1": "质检员一报价: {price_1} 元/吨",
         "price_2": "质检员二报价: {price_2} 元/吨",
@@ -36,6 +41,11 @@ class AppraisalLogSerializer(serializers.ModelSerializer):
         fields = ('id', 'a_status', 'in_accordance', 'history_date', 'ivid', 'parameter', 'formatted')
 
     def get_formatted(self, obj):
+        try:
+            supple_parameter = json.loads(obj.ivid.dmid_t.pid.t2id.t1id.json_schema_of_appraisal.last().json_schema)[
+                'required']
+        except ValueError:
+            return None
 
         to_format = []
         to_format_args = {}
@@ -44,6 +54,13 @@ class AppraisalLogSerializer(serializers.ModelSerializer):
             # Fixme: How to determine if 0 should be contained in this format.
             if attr:
                 to_format.append(v)
+                to_format_args[k] = attr
+
+        for k in supple_parameter:
+            attr = getattr(obj, k, None)
+            # Fixme: How to determine if 0 should be contained in this format.
+            if attr:
+                to_format.append(self.MAP_FIELD_NAME_SUPPLE[k])
                 to_format_args[k] = attr
 
         try:
